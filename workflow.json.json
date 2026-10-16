@@ -1,0 +1,342 @@
+{
+  "name": "AI Customer Support Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "53112275-aaf5-4c8e-aac1-7cce3db2b7f5",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "WH3ijzuaC1gGEHVQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional customer support assistant.\n\nAnalyze this customer email:\n{{ $json.text || $json.snippet || '' }}\n\nClassify the email and draft a professional\nresponse. Do not invent order statuses,\nrefund approvals, or delivery dates.\n\nReturn ONLY valid JSON:\n{\n  \"category\": \"Complaint\",\n  \"priority\": \"Medium\",\n  \"reply\": \"Dear Customer, ...\"\n}\n\nCategory: Complaint, Inquiry, Feedback, Other\nPriority: High, Medium, Low\n\nDo not include Markdown code fences.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a professional customer support assistant.  Analyze this customer email:  {{ $json.text || $json.snippet || '' }}  Tasks: 1. Classify it as Complaint, Inquiry,    Feedback, or Other. 2. Assign High, Medium, or Low priority. 3. Draft a polite, helpful reply. 4. Never invent order or delivery details. 5. Ask for missing information.  Return: Category: Priority: Suggested Reply:"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        144,
+        0
+      ],
+      "id": "7bbb49bb-600b-43fd-ade0-ed2b10085085",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        144
+      ],
+      "id": "7785ce78-6794-416c-9f6e-d29a9f89cda7",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "IQ1s9cuUYC4qbCCr",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "48e30ba5-42da-4f37-94bb-76ffd0ca15e7",
+              "name": "Date",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "79d78d89-7fc7-44f1-ba56-705ba3a4ca08",
+              "name": "Customer Email",
+              "value": "={{ $('Gmail Trigger').first().json.From }}",
+              "type": "string"
+            },
+            {
+              "id": "a4823925-e201-4534-bf26-d457b7967d85",
+              "name": "Subject",
+              "value": "={{ $('Gmail Trigger').first().json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "732395b7-207c-4d3d-a938-3594360b6b79",
+              "name": "=Category",
+              "value": "={{ JSON.parse($json.text).category }}",
+              "type": "string"
+            },
+            {
+              "id": "9ea3a63e-7805-47c8-883e-72ebb5bd8347",
+              "name": "=Priority",
+              "value": "={{ JSON.parse($json.text).priority }}",
+              "type": "string"
+            },
+            {
+              "id": "4160fd21-4043-40a2-9d31-b7a05545c517",
+              "name": "=AI Reply",
+              "value": "={{ JSON.parse($json.text).reply }}",
+              "type": "string"
+            },
+            {
+              "id": "7c516f37-5e9e-40ce-8452-4ed30fe599bf",
+              "name": "Status",
+              "value": "Draft Pending Review",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "8b826dd0-0fad-4b40-9753-f20cbf6e4c89",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1_UZDzhJpYps47aTIeCgmaKNbuY9OzCcpPnSvFtfrCT8",
+          "mode": "list",
+          "cachedResultName": "AI Customer Support Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_UZDzhJpYps47aTIeCgmaKNbuY9OzCcpPnSvFtfrCT8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_UZDzhJpYps47aTIeCgmaKNbuY9OzCcpPnSvFtfrCT8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Customer Email": "={{ $json['Customer Email'] }}",
+            "Subject": "={{ $json.Subject }}",
+            "Category": "={{ $json.Category }}",
+            "Priority": "={{ $json.Priority }}",
+            "AI Reply": "={{ $json['AI Reply'] }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Email",
+              "displayName": "Customer Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Reply",
+              "displayName": "AI Reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        0
+      ],
+      "id": "06d51582-35a5-4701-b64c-3984b77657a2",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZRvMOYcRLBGv3UGs",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ 'Re: ' + $json.Subject }}",
+        "message": "={{ $json['AI Reply'] }}",
+        "options": {
+          "threadId": "={{ $('Gmail Trigger').first().json.threadId }}",
+          "sendTo": "={{ ($json['Customer Email'].match(/<([^>]+)>/) || [null, $json['Customer Email']])[1] }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        0
+      ],
+      "id": "0c66afaa-a1e7-4183-8bfa-157fdc2dd987",
+      "name": "Create a draft",
+      "webhookId": "a6b90e02-e8e8-4f2b-9f0d-63132bbcda71",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "WH3ijzuaC1gGEHVQ",
+          "name": "Gmail account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7e694691-b277-4637-8994-32d03b3ffcd1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "360d7a71ff7dfb9d95c456b77f17c703ec2039b593646f19cd12c327e8750d4b"
+  },
+  "nodeGroups": [],
+  "id": "5v0y3eAmJViEbbQS",
+  "tags": []
+}
